@@ -206,7 +206,7 @@ void your_histogram_and_prefixsum(const float* const d_logLuminance,
 
   /*3) generate a histogram of all the values in the logLuminance channel using
        the formula: bin = (lum[i] - lumMin) / lumRange * numBins */
-  unsigned int * d_hist, * h_hist;
+  unsigned int * d_hist;
 
   checkCudaErrors(cudaMalloc((void**) &d_hist, sizeof(unsigned int) * numBins));
   checkCudaErrors(cudaMemset(d_hist, 0, sizeof(int)*numBins));

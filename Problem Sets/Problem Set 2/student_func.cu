@@ -167,11 +167,9 @@ void separateChannels(const uchar4* const inputImageRGBA,
                       unsigned char* const greenChannel,
                       unsigned char* const blueChannel)
 {
-  // TODO
-  //
   // NOTE: Be careful not to try to access memory that is outside the bounds of
-  // the image. You'll want code that performs the following check before accessing
-  // GPU memory:
+  // the image. You'll want code that performs the following check before 
+  // accessing GPU memory:
   //
   // if ( absolute_image_position_x >= numCols ||
   //      absolute_image_position_y >= numRows )
@@ -224,8 +222,10 @@ void recombineChannels(const unsigned char* const redChannel,
 unsigned char *d_red, *d_green, *d_blue;
 float         *d_filter;
 
-void allocateMemoryAndCopyToGPU(const size_t numRowsImage, const size_t numColsImage,
-                                const float* const h_filter, const size_t filterWidth)
+void allocateMemoryAndCopyToGPU(const size_t numRowsImage,
+                                const size_t numColsImage,
+                                const float* const h_filter,
+                                const size_t filterWidth)
 {
   //allocate memory for the three different channels
   //original
@@ -234,7 +234,6 @@ void allocateMemoryAndCopyToGPU(const size_t numRowsImage, const size_t numColsI
   checkCudaErrors(cudaMalloc(&d_green, p_size));
   checkCudaErrors(cudaMalloc(&d_blue,  p_size));
 
-  //TODO:
   //Allocate memory for the filter on the GPU
   //Use the pointer d_filter that we have already declared for you
   //You need to allocate memory for the filter with cudaMalloc
@@ -244,15 +243,18 @@ void allocateMemoryAndCopyToGPU(const size_t numRowsImage, const size_t numColsI
   size_t f_size = sizeof(float) * filterWidth * filterWidth;
   checkCudaErrors(cudaMalloc(&d_filter,  f_size));
 
-  //TODO:
   //Copy the filter on the host (h_filter) to the memory you just allocated
   //on the GPU.  cudaMemcpy(dst, src, numBytes, cudaMemcpyHostToDevice);
   //Remember to use checkCudaErrors!
-  checkCudaErrors(cudaMemcpy(d_filter, h_filter, f_size, cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(d_filter, h_filter, f_size,
+                             cudaMemcpyHostToDevice));
 }
 
-void your_gaussian_blur(const uchar4 * const h_inputImageRGBA, uchar4 * const d_inputImageRGBA,
-                        uchar4* const d_outputImageRGBA, const size_t numRows, const size_t numCols,
+void your_gaussian_blur(const uchar4 * const h_inputImageRGBA,
+                        uchar4 * const d_inputImageRGBA,
+                        uchar4* const d_outputImageRGBA,
+                        const size_t numRows,
+                        const size_t numCols,
                         unsigned char *d_redBlurred, 
                         unsigned char *d_greenBlurred, 
                         unsigned char *d_blueBlurred,
@@ -303,12 +305,14 @@ void your_gaussian_blur(const uchar4 * const h_inputImageRGBA, uchar4 * const d_
                                          d_filter, 
                                          filterWidth);
 
-  // Again, call cudaDeviceSynchronize(), then call checkCudaErrors() immediately after
-  // launching your kernel to make sure that you didn't make any mistakes.
+  // Again, call cudaDeviceSynchronize(), then call checkCudaErrors() 
+  // immediately after launching your kernel to make sure that you 
+  // didn't make any mistakes.
   cudaDeviceSynchronize();
   checkCudaErrors(cudaGetLastError());
 
-  // Now we recombine your results. We take care of launching this kernel for you.
+  // Now we recombine your results. We take care of launching this kernel for 
+  // you.
   //
   // NOTE: This kernel launch depends on the gridSize and blockSize variables,
   // which you must set yourself.

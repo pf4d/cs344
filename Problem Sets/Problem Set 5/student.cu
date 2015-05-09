@@ -22,22 +22,53 @@
    The values are normally distributed - you may take
    advantage of this fact in your implementation.
 
+
+   Evan Cummings
+   Homework 6
+
+   The implementation here is derived from the cuda-programming blogspot (link
+   below).  It splits the data into blocks as a function of the number of 
+   processors and computes each block's histogram counts into a shared memory
+   histogram using atomic adds for each thread within a block, then each block 
+   does a single atomic add to the output array.
+
+   This method produces code that is readable, with a good amount of speedup
+   obtained by reducing the number of atomic adds. the code is about 7x faster
+   than the naive parallel approach.
+   
+   http://cuda-programming.blogspot.com/2013/03/computing-histogram-on-cuda-cuda-code_8.html
 */
 
-
 #include "utils.h"
+#include "reference.cpp"
 
 __global__
-void yourHisto(const unsigned int* const vals, //INPUT
-               unsigned int* const histo,      //OUPUT
+void histogram_optimized(const unsigned int* const vals,
+                         unsigned int* const histo,
+                         const unsigned int numVals)
+{
+  extern __shared__ unsigned int temp[];
+  temp[threadIdx.x] = 0;
+  __syncthreads();
+  
+  int i      = threadIdx.x + blockIdx.x * blockDim.x;
+  int stride = blockDim.x * gridDim.x;  // num threads in block
+  while (i < numVals)
+  {
+    atomicAdd( &(temp[vals[i]]), 1 );
+    i += stride;
+  }
+  __syncthreads();
+  atomicAdd( &(histo[threadIdx.x]), temp[threadIdx.x] );
+}
+
+__global__
+void histogram(const unsigned int* const vals,
+               unsigned int* const histo,
                int numVals)
 {
-  //TODO fill in this kernel to calculate the histogram
-  //as quickly as possible
-
-  //Although we provide only one kernel skeleton,
-  //feel free to use more if it will help you
-  //write faster code
+  int idx = threadIdx.x + blockIdx.x * blockDim.x;
+  atomicAdd(&(histo[vals[idx]]), 1);
 }
 
 void computeHistogram(const unsigned int* const d_vals, //INPUT
@@ -45,10 +76,16 @@ void computeHistogram(const unsigned int* const d_vals, //INPUT
                       const unsigned int numBins,
                       const unsigned int numElems)
 {
-  //TODO Launch the yourHisto kernel
-
-  //if you want to use/launch more than one kernel,
-  //feel free
-
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
+
+  cudaDeviceProp prop;
+  checkCudaErrors( cudaGetDeviceProperties( &prop, 0 ) );
+  int blocks = prop.multiProcessorCount;
+  int shared = numBins * sizeof(unsigned int);
+  
+  histogram_optimized <<<blocks*8, numBins, shared>>>
+      (d_vals, d_histo, numElems);
 }
+
+
+
